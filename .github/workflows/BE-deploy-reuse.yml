@@ -78,21 +78,21 @@ jobs:
         with:
           repository: ${{ inputs.REPO_PATH }}
           ref: ${{ inputs.BRANCH }}
-      - uses: actions/setup-python@v3
-      - uses: aws-actions/setup-sam@v2
-      - name: configure aws credentials
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ inputs.ASSUME_ROLE}}
-          role-session-name: GitHub_to_AWS_via_FederatedOIDC
-          aws-region: ${{ inputs.AWS_REGION }}
-      # Hello from AWS: WhoAmI
-      - name: Sts GetCallerIdentity
-        run: |
-          aws sts get-caller-identity
-      - name: sam build
-        working-directory: "${{ inputs.SAM_PATH }}"
-        run: sam build --use-container
+      # - uses: actions/setup-python@v3
+      # - uses: aws-actions/setup-sam@v2
+      # - name: configure aws credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     role-to-assume: ${{ inputs.ASSUME_ROLE}}
+      #     role-session-name: GitHub_to_AWS_via_FederatedOIDC
+      #     aws-region: ${{ inputs.AWS_REGION }}
+      # # Hello from AWS: WhoAmI
+      # - name: Sts GetCallerIdentity
+      #   run: |
+      #     aws sts get-caller-identity
+      # - name: sam build
+      #   working-directory: "${{ inputs.SAM_PATH }}"
+      #   run: sam build --use-container
       # - name: sam deploy
       #   working-directory: "${{ inputs.SAM_PATH }}"
       #   run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --config-env ${{ inputs.CONFIG_ENV }}
