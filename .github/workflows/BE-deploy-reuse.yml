@@ -1,0 +1,167 @@
+name: Deploy sam to AWS
+run-name: Deploy sam to AWS by @${{ github.actor }}
+# Controls when the action will run. Invokes the workflow on push events but only for the main branch
+on:
+  workflow_call:
+    inputs:
+      AWS_REGION : 
+        required: true
+        type: string
+      SAM_PATH : 
+        required: true
+        type: string
+      POSTMAN_JSON: 
+        required: true
+        type: string
+      DEPLOY_TITLE: 
+        required: true
+        type: string
+      ASSUME_ROLE: 
+        required: true
+        type: string
+      REPO_PATH:
+        required: true
+        type: string
+      DEPLOY_ENV: 
+        required: true
+        type: string
+      BRANCH: 
+        required: true
+        type: string
+
+env:
+  POSTMAN_REPORT: "./APITest/report.js"
+
+# permissions:
+#     id-token: write   # This is required for requesting the JWT
+#     contents: read    # This is required for actions/checkout
+
+jobs:
+  Deploy_sam:
+    runs-on: ubuntu-latest
+    outputs: 
+      SLACK_TS: ${{ steps.slack.outputs.ts }}
+    steps:
+      - name: Send message to Slack
+        id: slack
+        uses: slackapi/slack-github-action@v1.24.0
+        with:
+          channel-id: ${{ secrets.SLACK_CHANNEL }}
+          # For posting a rich message using Block Kit
+          payload: |
+            {
+              "text": "${{ inputs.DEPLOY_ENV }}${{ inputs.DEPLOY_TITLE }}",
+              "attachments": [
+                {
+                  "color": "dbab09",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*From Branch:*\n${{ inputs.BRANCH }}"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Status:*\nIn Progress"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+      - name: Git clone the repository
+        uses: actions/checkout@v3
+        with:
+          repository: ${{ inputs.REPO_PATH }}
+          ref: ${{ inputs.BRANCH }}
+      - uses: actions/setup-python@v3
+      - uses: aws-actions/setup-sam@v2
+      - name: configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.ASSUME_ROLE}}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ inputs.AWS_REGION }}
+      # Hello from AWS: WhoAmI
+      - name: Sts GetCallerIdentity
+        run: |
+          aws sts get-caller-identity
+      - name: sam build
+        working-directory: "${{ inputs.REPO_PATH }}${{ inputs.SAM_PATH }}"
+        run: sam build --use-container
+      # - name: sam deploy
+      #   working-directory: "${{ inputs.REPO_PATH }}${{ inputs.SAM_PATH }}"
+      #   run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --config-env ${{ inputs.CONFIG_ENV }}
+      #   env:
+      #     CONFIG_ENV: ${{ inputs.BRANCH == 'main' && 'prod' || 'dev' }}
+      - name: Send message to Slack
+        uses: slackapi/slack-github-action@v1.24.0
+        if: always()
+        with:
+          # For posting a rich message using Block Kit
+          update-ts: ${{ steps.slack.outputs.ts }}
+          channel-id: ${{ secrets.SLACK_CHANNEL }}
+          payload: |
+            {
+              "text": "${{ inputs.DEPLOY_ENV }}${{ inputs.DEPLOY_TITLE }}",
+              "attachments": [
+                {
+                  "color": "${{ env.JOB_STATUS }}",
+                  "blocks": [
+                    {
+                      "type": "section",
+                      "fields": [
+                        {
+                          "type": "mrkdwn",
+                          "text": "*From Branch:*\n${{ inputs.BRANCH }}"
+                        },
+                        {
+                          "type": "mrkdwn",
+                          "text": "*Status:*\n${{ job.status }}"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          JOB_STATUS: ${{ job.status == 'success' && '#36a64f' || '#ff0000' }}
+      
+  Test_API:
+    needs: Deploy_sam
+    runs-on: ubuntu-latest
+    steps:
+      - name: Git clone the repository
+        uses: actions/checkout@v3
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+      - name: Install Newman CLI
+        run: npm install -g newman
+      - name: Run API tests
+        run: |
+          newman run ${{ inputs.REPO_PATH }}${{ inputs.POSTMAN_JSON }} -r cli,json --reporter-json-export newman-report.json --suppress-exit-code
+      - name: Upload Newman Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: newman-report
+          path: newman-report.json
+      - name: Install Slack SDK
+        run: npm install @slack/web-api
+      - name: Install Slack Bolt
+        run: npm install @slack/bolt
+      - name: Run Postman Report Parser
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_MESSAGE_TS: ${{ needs.Deploy_sam.outputs.SLACK_TS }}
+          SLACK_MESSAGE_TITLE: ${{ inputs.DEPLOY_TITLE }}
+          BRANCH: ${{ inputs.BRANCH }}
+          DEPLOY_ENV: ${{ inputs.DEPLOY_ENV }}
+        run: node ${{ env.POSTMAN_REPORT }}
