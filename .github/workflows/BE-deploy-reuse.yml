@@ -98,10 +98,10 @@ jobs:
         run: |
           aws sts get-caller-identity
       - name: sam build
-        working-directory: "${{ inputs.REPO_PATH }}${{ inputs.SAM_PATH }}"
+        working-directory: "${{ inputs.SAM_PATH }}"
         run: sam build --use-container
       # - name: sam deploy
-      #   working-directory: "${{ inputs.REPO_PATH }}${{ inputs.SAM_PATH }}"
+      #   working-directory: "${{ inputs.SAM_PATH }}"
       #   run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset --config-env ${{ inputs.CONFIG_ENV }}
       #   env:
       #     CONFIG_ENV: ${{ inputs.BRANCH == 'main' && 'prod' || 'dev' }}
@@ -152,7 +152,7 @@ jobs:
         run: npm install -g newman
       - name: Run API tests
         run: |
-          newman run ${{ inputs.REPO_PATH }}${{ inputs.POSTMAN_JSON }} -r cli,json --reporter-json-export newman-report.json --suppress-exit-code
+          newman run ${{ inputs.POSTMAN_JSON }} -r cli,json --reporter-json-export newman-report.json --suppress-exit-code
       - name: Upload Newman Report
         uses: actions/upload-artifact@v4
         with:
