@@ -163,4 +163,4 @@ jobs:
           SLACK_MESSAGE_TITLE: ${{ inputs.DEPLOY_TITLE }}
           BRANCH: ${{ inputs.BRANCH }}
           DEPLOY_ENV: ${{ inputs.DEPLOY_ENV }}
-        run: node Maio-Kevin/myactiontest/APITest/report.js
+        run: node https://github.com/Maio-Kevin/myactiontest/blob/main/APITest/report.js
