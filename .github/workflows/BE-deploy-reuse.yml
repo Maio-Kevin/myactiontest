@@ -35,13 +35,6 @@ on:
       SLACK_BOT_TOKEN:
         required: true
 
-env:
-  POSTMAN_REPORT: "./APITest/report.js"
-
-# permissions:
-#     id-token: write   # This is required for requesting the JWT
-#     contents: read    # This is required for actions/checkout
-
 jobs:
   Deploy_sam:
     runs-on: ubuntu-latest
@@ -170,4 +163,4 @@ jobs:
           SLACK_MESSAGE_TITLE: ${{ inputs.DEPLOY_TITLE }}
           BRANCH: ${{ inputs.BRANCH }}
           DEPLOY_ENV: ${{ inputs.DEPLOY_ENV }}
-        run: node ${{ env.POSTMAN_REPORT }}
+        run: node Maio-Kevin/myactiontest/APITest/report.js
