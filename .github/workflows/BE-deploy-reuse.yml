@@ -13,6 +13,9 @@ on:
       POSTMAN_JSON: 
         required: true
         type: string
+      REPORT_PATH:
+        required: true
+        type: string
       DEPLOY_TITLE: 
         required: true
         type: string
@@ -163,4 +166,4 @@ jobs:
           SLACK_MESSAGE_TITLE: ${{ inputs.DEPLOY_TITLE }}
           BRANCH: ${{ inputs.BRANCH }}
           DEPLOY_ENV: ${{ inputs.DEPLOY_ENV }}
-        run: node https://github.com/Maio-Kevin/myactiontest/blob/main/APITest/report.js
+        run: node ${{ inputs.REPORT_PATH }}
