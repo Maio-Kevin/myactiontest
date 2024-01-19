@@ -28,6 +28,12 @@ on:
       BRANCH: 
         required: true
         type: string
+      SLACK_CHANNEL:
+        required: true
+        type: string
+      SLACK_BOT_TOKEN:
+        required: true
+        type: string
 
 env:
   POSTMAN_REPORT: "./APITest/report.js"
@@ -46,7 +52,7 @@ jobs:
         id: slack
         uses: slackapi/slack-github-action@v1.24.0
         with:
-          channel-id: ${{ secrets.SLACK_CHANNEL }}
+          channel-id: ${{ inputs.SLACK_CHANNEL }}
           # For posting a rich message using Block Kit
           payload: |
             {
@@ -73,7 +79,7 @@ jobs:
               ]
             }
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_BOT_TOKEN: ${{ inputs.SLACK_BOT_TOKEN }}
       - name: Git clone the repository
         uses: actions/checkout@v3
         with:
@@ -105,7 +111,7 @@ jobs:
         with:
           # For posting a rich message using Block Kit
           update-ts: ${{ steps.slack.outputs.ts }}
-          channel-id: ${{ secrets.SLACK_CHANNEL }}
+          channel-id: ${{ inputs.SLACK_CHANNEL }}
           payload: |
             {
               "text": "${{ inputs.DEPLOY_ENV }}${{ inputs.DEPLOY_TITLE }}",
@@ -131,7 +137,7 @@ jobs:
               ]
             }
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_BOT_TOKEN: ${{ inputs.SLACK_BOT_TOKEN }}
           JOB_STATUS: ${{ job.status == 'success' && '#36a64f' || '#ff0000' }}
       
   Test_API:
@@ -158,8 +164,8 @@ jobs:
         run: npm install @slack/bolt
       - name: Run Postman Report Parser
         env:
-          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL }}
+          SLACK_BOT_TOKEN: ${{ inputs.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ inputs.SLACK_CHANNEL }}
           SLACK_MESSAGE_TS: ${{ needs.Deploy_sam.outputs.SLACK_TS }}
           SLACK_MESSAGE_TITLE: ${{ inputs.DEPLOY_TITLE }}
           BRANCH: ${{ inputs.BRANCH }}
